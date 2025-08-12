@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Bash(dotnet format:*)",
+      "WebFetch(domain:docs.rs)",
+      "WebFetch(domain:docs.unity3d.com)",
+      "Bash(cargo check:*)",
+      "Bash(rustup target:*)",
+      "Bash(cargo:*)",
+      "Bash(spacetime build:*)",
+      "Bash(spacetime publish:*)",
+      "Bash(spacetime generate:*)",
+      "Bash(spacetime logs:*)",
+      "Bash(spacetime call:*)",
+      "Bash(spacetime sql:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:spacetimedb.com)",
+      "Bash(cat:*)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(curl:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(del nul)"
+    ],
+    "deny": []
+  }
+}

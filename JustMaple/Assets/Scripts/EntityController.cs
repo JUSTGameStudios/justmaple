@@ -31,7 +31,11 @@ public abstract class EntityController : MonoBehaviour {
   }
 
   public void SetColor(Color color) {
-    GetComponent<MeshRenderer>().material.SetColor(ShaderColorProperty, color);
+    // Find MeshRenderer on this GameObject or its children (for prefabs with child visuals)
+    var meshRenderer = GetComponent<MeshRenderer>() ?? GetComponentInChildren<MeshRenderer>();
+    if (meshRenderer != null) {
+      meshRenderer.material.SetColor(ShaderColorProperty, color);
+    }
   }
 
   public virtual void OnEntityUpdated(Entity newVal) {
@@ -53,8 +57,7 @@ public abstract class EntityController : MonoBehaviour {
   }
 
   public static Vector3 MassToScale(uint mass) {
-    var diameter = MassToDiameter(mass);
-    return new Vector3(diameter, diameter, 1);
+    return Vector3.one;
   }
 
   public static float MassToRadius(uint mass) => Mathf.Sqrt(mass);

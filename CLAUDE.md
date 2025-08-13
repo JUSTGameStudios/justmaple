@@ -1,11 +1,11 @@
 # JustMaple Project
 
 ## Project Overview
-JustMaple is a multiplayer Unity game based on the SpacetimeDB Unity tutorial (parts 1-4). It's an agar.io-style game where players control circles that can eat food and smaller circles to grow larger.
+JustMaple is a 2.5D multiplayer Unity game based on the SpacetimeDB Unity tutorial (parts 1-4). It's an agar.io-style game where players control circles that can eat food and smaller circles to grow larger.
 
 ## Technology Stack
-- **Unity 2022.3+** - Game engine and client
-- **SpacetimeDB** - Real-time multiplayer database and server
+- **Unity 2022.3+** - Game engine and client rendering in 3D on a flat plane
+- **SpacetimeDB** - Real-time multiplayer database and server, simulating in 2D
 - **C#** - Unity client code
 - **Rust** - Server code
 - **Universal Render Pipeline (URP)** - Unity rendering
@@ -139,6 +139,44 @@ Output Format:
 - Start with "## API References" section listing docs fetched
 - Include inline comments: // See: [URL] for [specific API]
 - End with verification checklist
+
+## ERROR AND WARNING HANDLING PROTOCOL
+
+CRITICAL: Always fix ALL errors and warnings - never leave them unresolved!
+
+### Unity Development
+1. **ALWAYS** use Unity MCP to check console for errors/warnings:
+   ```
+   mcp__UnityMCP__read_console with action="get", types=["error", "warning"]
+   ```
+2. Fix compilation errors before proceeding with any other tasks
+3. Address all Unity console warnings
+4. Ensure Unity Editor and MCP Bridge are running for console access
+
+### SpacetimeDB Development  
+1. **ALWAYS** run `cargo build` to check for errors/warnings
+2. Fix all Rust compiler warnings using `cargo fix` or manual fixes
+3. Ensure clean builds with zero warnings before task completion
+
+### General Development
+- Treat warnings as errors - they must be fixed
+- Never commit code with unresolved warnings or errors
+- Test thoroughly after fixing issues
+- Use TodoWrite to track error fixing progress
+
+## NO WORKAROUND POLICY
+
+**CRITICAL: Never create temporary workarounds or quick fixes!**
+
+When encountering issues:
+1. **Do NOT** create temporary fixes, workarounds, or bypass solutions
+2. **Do NOT** comment out broken code to "fix later"
+3. **Do NOT** use legacy systems to avoid fixing current implementation
+4. **DO** ask the user for help to troubleshoot the root cause
+5. **DO** work together to find the proper solution
+6. **DO** fix the actual problem, not the symptoms
+
+This ensures code quality, prevents technical debt, and maintains project integrity.
 
 ## Next Steps for Transformation
 This project will be significantly enhanced with:

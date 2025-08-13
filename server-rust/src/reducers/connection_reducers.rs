@@ -2,7 +2,7 @@ use spacetimedb::{reducer, ReducerContext, Table};
 use crate::tables::{Player, LoggedOutPlayer};
 // Import table access traits
 use crate::tables::player::{player, logged_out_player};
-use crate::tables::circle::circle;
+use crate::tables::movement_controller::movement_controller;
 use crate::tables::entity::entity;
 
 // See: https://docs.rs/spacetimedb/latest/spacetimedb/attr.reducer.html for reducer definitions
@@ -33,11 +33,11 @@ pub fn disconnect(ctx: &ReducerContext) {
     let player = ctx.db.player().identity().find(&ctx.sender)
         .expect("Player not found");
 
-    // Remove any circles from the arena
-    for circle in ctx.db.circle().player_id().filter(&player.player_id) {
-        if let Some(entity) = ctx.db.entity().entity_id().find(&circle.entity_id) {
+    // Remove any player entities from the arena
+    for controller in ctx.db.movement_controller().player_id().filter(&player.player_id) {
+        if let Some(entity) = ctx.db.entity().entity_id().find(&controller.entity_id) {
             ctx.db.entity().entity_id().delete(&entity.entity_id);
-            ctx.db.circle().entity_id().delete(&entity.entity_id);
+            ctx.db.movement_controller().entity_id().delete(&entity.entity_id);
         }
     }
 

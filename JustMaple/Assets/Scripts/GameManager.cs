@@ -14,8 +14,8 @@ public class GameManager : MonoBehaviour {
   public static event Action OnConnected;
   public static event Action OnSubscriptionApplied;
 
-  public float borderThickness = 2;
-  public Material borderMaterial;
+  [Header("Player Management")]
+  public PlayerController LocalPlayerController; // Reference to PlayerController GameObject
 
   public static GameManager Instance {
     get; private set;
@@ -62,10 +62,9 @@ public class GameManager : MonoBehaviour {
     AuthToken.SaveToken(token);
     LocalIdentity = identity;
 
-    conn.Db.Circle.OnInsert += CircleOnInsert;
+    conn.Db.MovementController.OnInsert += MovementControllerOnInsert;
     conn.Db.Entity.OnUpdate += EntityOnUpdate;
     conn.Db.Entity.OnDelete += EntityOnDelete;
-    conn.Db.Food.OnInsert += FoodOnInsert;
     conn.Db.Player.OnInsert += PlayerOnInsert;
     conn.Db.Player.OnDelete += PlayerOnDelete;
 
@@ -77,10 +76,13 @@ public class GameManager : MonoBehaviour {
         .SubscribeToAllTables();
   }
 
-  private static void CircleOnInsert(EventContext context, Circle insertedValue) {
+  private static void MovementControllerOnInsert(EventContext context, MovementController insertedValue) {
     var player = GetOrCreatePlayer(insertedValue.PlayerId);
-    var entityController = PrefabManager.SpawnCircle(insertedValue, player);
-    Entities.Add(insertedValue.EntityId, entityController);
+    // player will be null for remote players, which is fine - they still get visual entities
+    var entityController = MovementControllerEntity.Spawn(insertedValue, player);
+    if (entityController != null) {
+      Entities.Add(insertedValue.EntityId, entityController);
+    }
   }
 
   private static void EntityOnUpdate(EventContext context, Entity oldEntity, Entity newEntity) {
@@ -96,10 +98,6 @@ public class GameManager : MonoBehaviour {
     }
   }
 
-  private static void FoodOnInsert(EventContext context, Food insertedValue) {
-    var entityController = PrefabManager.SpawnFood(insertedValue);
-    Entities.Add(insertedValue.EntityId, entityController);
-  }
 
   private static void PlayerOnInsert(EventContext context, Player insertedPlayer) {
     GetOrCreatePlayer(insertedPlayer.PlayerId);
@@ -114,8 +112,24 @@ public class GameManager : MonoBehaviour {
   private static PlayerController GetOrCreatePlayer(uint playerId) {
     if (!Players.TryGetValue(playerId, out var playerController)) {
       var player = Conn.Db.Player.PlayerId.Find(playerId);
-      playerController = PrefabManager.SpawnPlayer(player);
-      Players.Add(playerId, playerController);
+
+      // Check if this is the local player
+      if (player.Identity == LocalIdentity) {
+        // Use the referenced local PlayerController
+        playerController = Instance.LocalPlayerController;
+        if (playerController != null) {
+          playerController.Initialize(player);
+        }
+      }
+      else {
+        // Remote players don't need PlayerController instances in this client
+        // They're just visual entities managed by MovementControllerEntity
+        return null;
+      }
+
+      if (playerController != null) {
+        Players.Add(playerId, playerController);
+      }
     }
 
     return playerController;
@@ -136,10 +150,7 @@ public class GameManager : MonoBehaviour {
     Debug.Log("Subscription applied!");
     OnSubscriptionApplied?.Invoke();
 
-    // Once we have the initial subscription sync'd to the client cache
-    // Get the world size from the config table and set up the arena
-    var worldSize = Conn.Db.Config.Id.Find(0).WorldSize;
-    SetupArena(worldSize);
+    // Initialize camera controller without borders
 
     // Call enter game with the player name 3Blave
     ctx.Reducers.EnterGame("3Blave");
@@ -154,25 +165,4 @@ public class GameManager : MonoBehaviour {
     Conn = null;
   }
 
-  private void SetupArena(float worldSize) {
-    CreateBorderCube(new Vector2(worldSize / 2.0f, worldSize + borderThickness / 2),
-        new Vector2(worldSize + borderThickness * 2.0f, borderThickness)); //North
-    CreateBorderCube(new Vector2(worldSize / 2.0f, -borderThickness / 2),
-        new Vector2(worldSize + borderThickness * 2.0f, borderThickness)); //South
-    CreateBorderCube(new Vector2(worldSize + borderThickness / 2, worldSize / 2.0f),
-        new Vector2(borderThickness, worldSize + borderThickness * 2.0f)); //East
-    CreateBorderCube(new Vector2(-borderThickness / 2, worldSize / 2.0f),
-        new Vector2(borderThickness, worldSize + borderThickness * 2.0f)); //West
-
-    // Set the world size for the camera controller
-    CameraController.WorldSize = worldSize;
-  }
-
-  private void CreateBorderCube(Vector2 position, Vector2 scale) {
-    var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-    cube.name = "Border";
-    cube.transform.localScale = new Vector3(scale.x, scale.y, 1);
-    cube.transform.position = new Vector3(position.x, position.y, 1);
-    cube.GetComponent<MeshRenderer>().material = borderMaterial;
-  }
 }

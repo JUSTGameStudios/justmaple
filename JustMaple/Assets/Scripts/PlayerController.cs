@@ -17,59 +17,95 @@ public class PlayerController : MonoBehaviour {
 
   private uint PlayerId;
   private float LastMovementSendTimestamp;
-  private Vector2? LockInputPosition;
-  private List<CircleController> OwnedCircles = new List<CircleController>();
+  private List<MovementControllerEntity> OwnedEntities = new List<MovementControllerEntity>(); // NEW: Track movement entities instead of circles
+
+  // NEW: Input System integration
+  private PlatformerInputActions inputActions;
+  private float horizontalInput;
+  private bool jumpInput;
+  private bool jumpPressed;
 
   public string Username => GameManager.Conn.Db.Player.PlayerId.Find(PlayerId).Name;
-  public int NumberOfOwnedCircles => OwnedCircles.Count;
+  public int NumberOfOwnedEntities => OwnedEntities.Count; // NEW: Renamed from NumberOfOwnedCircles
   public bool IsLocalPlayer => this == Local;
 
   public void Initialize(Player player) {
     PlayerId = player.PlayerId;
     if (player.Identity == GameManager.LocalIdentity) {
       Local = this;
+      SetupInputSystem(); // NEW: Initialize input system for local player
     }
+  }
+
+  // NEW: Setup Unity Input System
+  private void SetupInputSystem() {
+    if (inputActions == null) {
+      inputActions = new PlatformerInputActions();
+      inputActions.Gameplay.Move.performed += OnMoveInput;
+      inputActions.Gameplay.Move.canceled += OnMoveInput;
+      inputActions.Gameplay.Jump.performed += OnJumpInput;
+      inputActions.Gameplay.Jump.canceled += OnJumpInput;
+      inputActions.Enable();
+    }
+  }
+
+  // NEW: Handle horizontal movement input
+  private void OnMoveInput(InputAction.CallbackContext context) {
+    horizontalInput = context.ReadValue<float>();
+  }
+
+  // NEW: Handle jump input
+  private void OnJumpInput(InputAction.CallbackContext context) {
+    bool wasPressed = jumpInput;
+    jumpInput = context.ReadValueAsButton();
+    jumpPressed = jumpInput && !wasPressed; // Edge detection for jump press
   }
 
   private void OnDestroy() {
-    // If we have any circles, destroy them
-    foreach (var circle in OwnedCircles) {
-      if (circle != null) {
-        Destroy(circle.gameObject);
+    // Clean up input system
+    if (inputActions != null) {
+      inputActions.Disable();
+      inputActions.Dispose();
+    }
+
+    // If we have any entities, destroy them
+    foreach (var entity in OwnedEntities) {
+      if (entity != null) {
+        Destroy(entity.gameObject);
       }
     }
-    OwnedCircles.Clear();
+    OwnedEntities.Clear();
   }
 
-  public void OnCircleSpawned(CircleController circle) {
-    OwnedCircles.Add(circle);
+  public void OnEntitySpawned(MovementControllerEntity entity) { // NEW: Updated method name
+    OwnedEntities.Add(entity);
   }
 
-  public void OnCircleDeleted(CircleController deletedCircle) {
+  public void OnEntityDeleted(MovementControllerEntity deletedEntity) { // NEW: Updated method name
     // This means we got eaten
-    if (OwnedCircles.Remove(deletedCircle) && IsLocalPlayer && OwnedCircles.Count == 0) {
+    if (OwnedEntities.Remove(deletedEntity) && IsLocalPlayer && OwnedEntities.Count == 0) {
       // DeathScreen.Instance.SetVisible(true);
     }
   }
 
   public uint TotalMass() {
-    return (uint)OwnedCircles
-        .Select(circle => GameManager.Conn.Db.Entity.EntityId.Find(circle.EntityId))
-  .Sum(e => e?.Mass ?? 0); //If this entity is being deleted on the same frame that we're moving, we can have a null entity here.
+    return (uint)OwnedEntities
+        .Select(entity => GameManager.Conn.Db.Entity.EntityId.Find(entity.EntityId))
+        .Sum(e => e?.Mass ?? 0); //If this entity is being deleted on the same frame that we're moving, we can have a null entity here.
   }
 
   public Vector2? CenterOfMass() {
-    if (OwnedCircles.Count == 0) {
+    if (OwnedEntities.Count == 0) {
       return null;
     }
 
     Vector2 totalPos = Vector2.zero;
     float totalMass = 0;
-    foreach (var circle in OwnedCircles) {
-      var entity = GameManager.Conn.Db.Entity.EntityId.Find(circle.EntityId);
-      var position = circle.transform.position;
-      totalPos += (Vector2)position * entity.Mass;
-      totalMass += entity.Mass;
+    foreach (var entity in OwnedEntities) {
+      var entityData = GameManager.Conn.Db.Entity.EntityId.Find(entity.EntityId);
+      var position = entity.transform.position;
+      totalPos += (Vector2)position * entityData.Mass;
+      totalMass += entityData.Mass;
     }
 
     return totalPos / totalMass;
@@ -84,35 +120,22 @@ public class PlayerController : MonoBehaviour {
   }
 
   public void Update() {
-    if (!IsLocalPlayer || NumberOfOwnedCircles == 0) {
+    if (!IsLocalPlayer || NumberOfOwnedEntities == 0) {
       return;
     }
 
-    if (Keyboard.current.qKey.wasPressedThisFrame) {
-      if (LockInputPosition.HasValue) {
-        LockInputPosition = null;
-      }
-      else {
-        LockInputPosition = Mouse.current.position.ReadValue();
-      }
-    }
-
-    // Throttled input requests
+    // NEW: Send platformer input at 20Hz to server
     if (Time.time - LastMovementSendTimestamp >= SEND_UPDATES_FREQUENCY) {
       LastMovementSendTimestamp = Time.time;
 
-      var mousePosition = LockInputPosition ?? Mouse.current.position.ReadValue();
-      var screenSize = new Vector2 {
-        x = Screen.width,
-        y = Screen.height,
-      };
-      var centerOfScreen = screenSize / 2;
+      // Send current input state to server - no mouse conversion needed!
+      float horizontal = testInputEnabled ? testInput.x : horizontalInput;
+      bool jump = testInputEnabled ? testInput.y > 0.5f : (jumpInput || jumpPressed);
 
-      var direction = (mousePosition - centerOfScreen) / (screenSize.y / 3);
-      if (testInputEnabled) {
-        direction = testInput;
-      }
-      GameManager.Conn.Reducers.UpdatePlayerInput(direction);
+      GameManager.Conn.Reducers.UpdatePlayerInput(horizontal, jump);
+
+      // Reset jump press after sending
+      jumpPressed = false;
     }
   }
 

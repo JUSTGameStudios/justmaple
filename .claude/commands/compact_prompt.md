@@ -1,1 +1,1 @@
-you need to compact your context soon before continuing work, write me a prompt for the "/compact [prompt]" command so that you can continue to work seamlessly after the compaction
+you need to compact your context soon before continuing work, write me a prompt for the "/compact [prompt]" command so that you can continue to work seamlessly after the compaction. Your response should be in the format "/compact [prompt]"

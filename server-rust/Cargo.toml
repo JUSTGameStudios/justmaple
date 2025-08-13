@@ -10,3 +10,6 @@ crate-type = ["cdylib"]
 # See: https://docs.rs/spacetimedb/latest/spacetimedb/ for SpacetimeDB Rust SDK
 spacetimedb = "1.3.0"
 log = "0.4.17"
+# See: https://docs.rs/rapier2d/latest/rapier2d/ for Rapier2D Physics Engine
+rapier2d = { version = "0.22", features = ["simd-stable"] }
+# Note: Using Rapier's nalgebra re-export to avoid version conflicts

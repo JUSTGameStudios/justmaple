@@ -17,21 +17,30 @@ namespace SpacetimeDB.Types {
     public uint EntityId;
     [DataMember(Name = "position")]
     public DbVector2 Position;
+    [DataMember(Name = "velocity")]
+    public DbVector2 Velocity;
     [DataMember(Name = "mass")]
     public uint Mass;
+    [DataMember(Name = "entity_type")]
+    public EntityType EntityType;
 
     public Entity(
         uint EntityId,
         DbVector2 Position,
-        uint Mass
+        DbVector2 Velocity,
+        uint Mass,
+        EntityType EntityType
     ) {
       this.EntityId = EntityId;
       this.Position = Position;
+      this.Velocity = Velocity;
       this.Mass = Mass;
+      this.EntityType = EntityType;
     }
 
     public Entity() {
       this.Position = new();
+      this.Velocity = new();
     }
   }
 }

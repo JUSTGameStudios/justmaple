@@ -17,7 +17,6 @@ server-rust/
 │   │   ├── player.rs          # Player and LoggedOutPlayer tables
 │   │   ├── entity.rs          # Base entity table
 │   │   ├── circle.rs          # Player circle table
-│   │   ├── food.rs            # Food entity table
 │   │   ├── config.rs          # Game configuration table
 │   │   └── timers.rs          # Scheduled timer tables
 │   ├── reducers/              # Server game logic

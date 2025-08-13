@@ -12,11 +12,11 @@ using System.Runtime.Serialization;
 
 namespace SpacetimeDB.Types {
   public sealed partial class RemoteReducers : RemoteBase {
-    public delegate void UpdatePlayerInputHandler(ReducerEventContext ctx, DbVector2 direction);
+    public delegate void UpdatePlayerInputHandler(ReducerEventContext ctx, float horizontal, bool jump);
     public event UpdatePlayerInputHandler? OnUpdatePlayerInput;
 
-    public void UpdatePlayerInput(DbVector2 direction) {
-      conn.InternalCallReducer(new Reducer.UpdatePlayerInput(direction), this.SetCallReducerFlags.UpdatePlayerInputFlags);
+    public void UpdatePlayerInput(float horizontal, bool jump) {
+      conn.InternalCallReducer(new Reducer.UpdatePlayerInput(horizontal, jump), this.SetCallReducerFlags.UpdatePlayerInputFlags);
     }
 
     public bool InvokeUpdatePlayerInput(ReducerEventContext ctx, Reducer.UpdatePlayerInput args) {
@@ -35,7 +35,8 @@ namespace SpacetimeDB.Types {
       }
       OnUpdatePlayerInput(
           ctx,
-          args.Direction
+          args.Horizontal,
+          args.Jump
       );
       return true;
     }
@@ -45,15 +46,20 @@ namespace SpacetimeDB.Types {
     [SpacetimeDB.Type]
     [DataContract]
     public sealed partial class UpdatePlayerInput : Reducer, IReducerArgs {
-      [DataMember(Name = "direction")]
-      public DbVector2 Direction;
+      [DataMember(Name = "horizontal")]
+      public float Horizontal;
+      [DataMember(Name = "jump")]
+      public bool Jump;
 
-      public UpdatePlayerInput(DbVector2 Direction) {
-        this.Direction = Direction;
+      public UpdatePlayerInput(
+          float Horizontal,
+          bool Jump
+      ) {
+        this.Horizontal = Horizontal;
+        this.Jump = Jump;
       }
 
       public UpdatePlayerInput() {
-        this.Direction = new();
       }
 
       string IReducerArgs.ReducerName => "update_player_input";

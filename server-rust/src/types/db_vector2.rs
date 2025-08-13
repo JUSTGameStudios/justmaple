@@ -1,5 +1,8 @@
 use spacetimedb::SpacetimeType;
 use std::ops::{Add, Sub, Mul, Div};
+// See: https://docs.rs/nalgebra/latest/nalgebra/ for nalgebra Vector2
+// Using Rapier's nalgebra re-export to avoid version conflicts
+use rapier2d::na::Vector2;
 
 // See: https://docs.rs/spacetimedb/latest/spacetimedb/derive.SpacetimeType.html for custom types
 #[derive(SpacetimeType, Clone, Copy, Debug, PartialEq)]
@@ -32,6 +35,16 @@ impl DbVector2 {
 
     pub fn zero() -> Self {
         Self::new(0.0, 0.0)
+    }
+
+    // Conversion to/from nalgebra Vector2 for Rapier2D integration
+    // See: https://docs.rs/nalgebra/latest/nalgebra/base/struct.Vector2.html
+    pub fn to_nalgebra(&self) -> Vector2<f32> {
+        Vector2::new(self.x, self.y)
+    }
+
+    pub fn from_nalgebra(vec: Vector2<f32>) -> Self {
+        Self::new(vec.x, vec.y)
     }
 }
 
